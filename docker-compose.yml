@@ -1,0 +1,65 @@
+version: "3.8"
+services:
+  php:
+    build:
+      context: .
+      dockerfile: ./config/php/Dockerfile
+    restart: always
+    container_name: php
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./sites/html:/var/www/html"
+    links:
+      - mysql
+    networks:
+      - local
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  nginx:
+      image: nginx:alpine
+      restart: always
+      container_name: nginx
+      ports:
+        - "80:80"
+      volumes:
+        - "./config/nginx/nginx.conf:/etc/nginx/nginx.conf"
+        - "./sites/html:/var/www/html"
+        - "./data/logs/nginx:/var/log/nginx"
+      links:
+        - php
+        - mysql
+      networks:
+        - local
+
+  mysql:
+      image: mysql:8
+      environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: database
+        MYSQL_USER: user
+        MYSQL_PASSWORD: password
+      container_name: mysql
+      restart: always
+      ports:
+        - "3306:3306"
+      volumes:
+        - "./data/mysql:/var/lib/mysql"
+        - "./data/logs/mysql:/var/log/mysql"
+      networks:
+        - local
+
+  adminer:
+    image: adminer:latest
+    restart: always
+    ports:
+      - "8001:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+    networks:
+      - local
+
+
+networks:
+  local:
